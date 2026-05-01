@@ -449,13 +449,20 @@ def smoke_test(verbose: bool = typer.Option(False, "--verbose", "-v")):
         "SELECT id FROM episodes WHERE source_id=? AND external_id=?",
         (src_id, str(test_clip.resolve())),
     ).fetchone()["id"]
-    # A daily slot at start of day so the playlist always has something.
+    # A daily slot snapped to the next 30-min boundary so the playlist
+    # immediately resolves the smoke-test episode (not at midnight).
+    from zoneinfo import ZoneInfo
+    from datetime import datetime as _dt
+    _tz = ZoneInfo(cfg.timezone)
+    _now = _dt.now(_tz)
+    _slot_min = cfg.schedule.slot_minutes
+    _next = ((_now.hour * 60 + _now.minute) // _slot_min + 1) * _slot_min
     conn.execute(
         """INSERT OR IGNORE INTO slots
             (label, day_of_week, start_minute, length_min, rule_type,
              rule_payload, recurrence)
-           VALUES ('Smoke Test', NULL, 0, 30, 'show_rotation', ?, 'daily')""",
-        (_json.dumps({"show_id": show_id, "policy": "newest_unaired"}),),
+           VALUES ('Smoke Test', NULL, ?, 30, 'show_rotation', ?, 'daily')""",
+        (_next, _json.dumps({"show_id": show_id, "policy": "newest_unaired"})),
     )
     conn.close()
     print(f"   show_id={show_id} source_id={src_id} episode_id={ep_id}")
@@ -518,7 +525,7 @@ def playout_test(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     cmd = build_command(cfg, output_override=[
         "-t", str(duration_sec), "-f", "mpegts", str(out_path),
-    ])
+    ], realtime=False)
     print("running:", " ".join(cmd))
     rc = subprocess.call(cmd)
     print(f"exit={rc}  output={out_path}  size={out_path.stat().st_size if out_path.exists() else 'missing'}")

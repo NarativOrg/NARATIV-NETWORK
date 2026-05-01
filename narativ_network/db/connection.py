@@ -1,15 +1,10 @@
 """SQLite connection + migration runner.
 
-`schema.sql` is the canonical CURRENT state of the schema (everything
-has CREATE TABLE IF NOT EXISTS / CREATE INDEX IF NOT EXISTS), so a
-fresh install gets the full schema in one shot.
-
-Migrations in `migrations/NNNN_name.sql` are for upgrading EXISTING
-databases that pre-date a schema change. On a fresh install where
+`schema.sql` is the canonical CURRENT state of the schema. Migrations
+are for upgrading EXISTING databases; on a fresh install where
 schema.sql already covers what a migration would add, the migration
-becomes a no-op — we detect that via OperationalError ('duplicate
-column name' / 'already exists') and silently mark the migration as
-applied.
+becomes a no-op via `OperationalError` ('duplicate column name' /
+'already exists').
 """
 from __future__ import annotations
 
@@ -34,11 +29,6 @@ def connect(cfg: Config) -> sqlite3.Connection:
 
 @contextmanager
 def transaction(conn: sqlite3.Connection):
-    """Manual BEGIN/COMMIT/ROLLBACK. NOTE: don't use this around
-    `executescript` — that runs its own implicit commits and can
-    leave the connection without an open transaction by the time
-    you try to ROLLBACK.
-    """
     conn.execute("BEGIN")
     try:
         yield conn

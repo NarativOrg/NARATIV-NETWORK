@@ -28,12 +28,12 @@ from ..config import Config, absolute_path
 log = logging.getLogger(__name__)
 
 
-def build_command(cfg: Config, output_override: list[str] | None = None) -> list[str]:
+def build_command(cfg: Config, output_override: list[str] | None = None,
+                  realtime: bool = True) -> list[str]:
     """Build the ffmpeg playout command.
 
-    `output_override`, if provided, replaces the default RTMP output args
-    (e.g. ["-f", "mpegts", "/tmp/nn_test.ts"]). Used by `nn playout-test`
-    so the chain runs without an RTMP destination.
+    `output_override` replaces the default RTMP output args.
+    `realtime=False` drops the -re flag so test encodes run at full speed.
     """
     if not shutil.which("ffmpeg"):
         raise RuntimeError("ffmpeg not found in PATH")
@@ -51,9 +51,10 @@ def build_command(cfg: Config, output_override: list[str] | None = None) -> list
     from ..process.audio import master_bus_chain
     af = master_bus_chain((cfg.raw.get("audio") or {}).get("master_bus"))
 
-    cmd = [
-        "ffmpeg", "-hide_banner", "-loglevel", "warning",
-        "-re",
+    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "warning"]
+    if realtime:
+        cmd += ["-re"]
+    cmd += [
         "-fflags", "+genpts",
         "-f", "concat", "-safe", "0", "-stream_loop", "-1",
         "-i", str(playlist),
