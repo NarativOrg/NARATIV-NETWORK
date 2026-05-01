@@ -1,9 +1,15 @@
 """SQLite connection + migration runner.
 
-Single source of truth for the schema is `schema.sql`. Migrations
-beyond initial schema live in `migrations/NNNN_name.sql` (created later
-when we need them); they're applied in lexical order and tracked in
-the `migrations` table.
+`schema.sql` is the canonical CURRENT state of the schema (everything
+has CREATE TABLE IF NOT EXISTS / CREATE INDEX IF NOT EXISTS), so a
+fresh install gets the full schema in one shot.
+
+Migrations in `migrations/NNNN_name.sql` are for upgrading EXISTING
+databases that pre-date a schema change. On a fresh install where
+schema.sql already covers what a migration would add, the migration
+becomes a no-op — we detect that via OperationalError ('duplicate
+column name' / 'already exists') and silently mark the migration as
+applied.
 """
 from __future__ import annotations
 
@@ -28,32 +34,49 @@ def connect(cfg: Config) -> sqlite3.Connection:
 
 @contextmanager
 def transaction(conn: sqlite3.Connection):
+    """Manual BEGIN/COMMIT/ROLLBACK. NOTE: don't use this around
+    `executescript` — that runs its own implicit commits and can
+    leave the connection without an open transaction by the time
+    you try to ROLLBACK.
+    """
     conn.execute("BEGIN")
     try:
         yield conn
         conn.execute("COMMIT")
     except Exception:
-        conn.execute("ROLLBACK")
+        try:
+            conn.execute("ROLLBACK")
+        except sqlite3.OperationalError:
+            pass
         raise
 
 
-def migrate(cfg: Config) -> list[str]:
-    """Apply schema.sql then any incremental migrations. Idempotent.
+_NOOP_MIGRATION_FRAGMENTS = ("duplicate column name", "already exists")
 
-    Returns the list of migration names newly applied.
-    """
+
+def _is_already_applied_error(e: BaseException) -> bool:
+    msg = str(e).lower()
+    return any(frag in msg for frag in _NOOP_MIGRATION_FRAGMENTS)
+
+
+def migrate(cfg: Config) -> list[str]:
     conn = connect(cfg)
     conn.executescript(SCHEMA_PATH.read_text())
-
     applied: list[str] = []
     if MIGRATIONS_DIR.exists():
         already = {row["name"] for row in conn.execute("SELECT name FROM migrations")}
         for path in sorted(MIGRATIONS_DIR.glob("*.sql")):
             if path.name in already:
                 continue
-            with transaction(conn):
+            try:
                 conn.executescript(path.read_text())
                 conn.execute("INSERT INTO migrations(name) VALUES (?)", (path.name,))
-            applied.append(path.name)
+                applied.append(path.name)
+            except sqlite3.OperationalError as e:
+                if _is_already_applied_error(e):
+                    conn.execute("INSERT OR IGNORE INTO migrations(name) VALUES (?)",
+                                 (path.name,))
+                else:
+                    raise
     conn.close()
     return applied
