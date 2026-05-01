@@ -199,7 +199,7 @@ def master_bus_chain(master_cfg: dict | None) -> str | None:
             f":ratio={comp.get('ratio', 2.0)}"
             f":attack={comp.get('attack_ms', 30)}"
             f":release={comp.get('release_ms', 300)}"
-            f":makeup={comp.get('makeup_db', 0)}"
+            f":makeup={max(1, comp.get('makeup_db', 1))}"
         )
 
     limit_db = cfg.get("limiter_dbtp", -1.0)
