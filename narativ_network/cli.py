@@ -531,5 +531,69 @@ def playout_test(
     print(f"exit={rc}  output={out_path}  size={out_path.stat().st_size if out_path.exists() else 'missing'}")
 
 
+@app.command()
+def preview(
+    port: int = typer.Option(8888, "--port", "-p", help="HTTP port for HLS playback"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+):
+    """Preview the channel live in a browser or VLC (no RTMP / nginx needed).
+
+    Runs the full broadcast encode chain (H.264 + AAC + master bus) and
+    writes HLS segments to /tmp/nn_preview_hls/, then serves them over
+    HTTP so any HLS-capable player can watch.
+
+      Open in Safari (native HLS):  http://127.0.0.1:<port>/live.m3u8
+      Open in VLC:  vlc http://127.0.0.1:<port>/live.m3u8
+    """
+    import http.server
+    import os
+    import subprocess
+    import threading
+
+    _setup_logging(verbose)
+    cfg = load_config()
+    from .playout.pusher import build_command
+
+    hls_dir = Path("/tmp/nn_preview_hls")
+    hls_dir.mkdir(parents=True, exist_ok=True)
+    m3u8 = hls_dir / "live.m3u8"
+
+    cmd = build_command(cfg, output_override=[
+        "-f", "hls",
+        "-hls_time", "2",
+        "-hls_list_size", "5",
+        "-hls_flags", "delete_segments",
+        str(m3u8),
+    ], realtime=True)
+
+    # Serve the HLS directory over HTTP.
+    orig_dir = os.getcwd()
+    os.chdir(hls_dir)
+
+    class _QuietHandler(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, fmt, *args):
+            pass  # suppress per-request noise
+
+    httpd = http.server.HTTPServer(("127.0.0.1", port), _QuietHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    os.chdir(orig_dir)
+
+    url = f"http://127.0.0.1:{port}/live.m3u8"
+    print(f"\n  Channel preview is live:")
+    print(f"    Safari / QuickTime : {url}")
+    print(f"    VLC                : open -a VLC '{url}'")
+    print(f"\n  Ctrl+C to stop.\n")
+
+    proc = subprocess.Popen(cmd)
+    try:
+        proc.wait()
+    except KeyboardInterrupt:
+        proc.terminate()
+        proc.wait()
+    finally:
+        httpd.shutdown()
+
+
 if __name__ == "__main__":
     app()
