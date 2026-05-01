@@ -545,8 +545,8 @@ def preview(
       Open in Safari (native HLS):  http://127.0.0.1:<port>/live.m3u8
       Open in VLC:  vlc http://127.0.0.1:<port>/live.m3u8
     """
+    import functools
     import http.server
-    import os
     import subprocess
     import threading
 
@@ -567,17 +567,14 @@ def preview(
     ], realtime=True)
 
     # Serve the HLS directory over HTTP.
-    orig_dir = os.getcwd()
-    os.chdir(hls_dir)
-
     class _QuietHandler(http.server.SimpleHTTPRequestHandler):
         def log_message(self, fmt, *args):
             pass  # suppress per-request noise
 
-    httpd = http.server.HTTPServer(("127.0.0.1", port), _QuietHandler)
+    handler = functools.partial(_QuietHandler, directory=str(hls_dir))
+    httpd = http.server.HTTPServer(("127.0.0.1", port), handler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
-    os.chdir(orig_dir)
 
     url = f"http://127.0.0.1:{port}/live.m3u8"
     print(f"\n  Channel preview is live:")
