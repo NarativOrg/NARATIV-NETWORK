@@ -567,9 +567,20 @@ def preview(
     ], realtime=True)
 
     # Serve the HLS directory over HTTP.
+    # Safari requires correct MIME types to play HLS — Python's default
+    # mime database doesn't know .m3u8 or .ts.
+    _MIME = {
+        ".m3u8": "application/x-mpegurl",
+        ".ts":   "video/MP2T",
+    }
+
     class _QuietHandler(http.server.SimpleHTTPRequestHandler):
         def log_message(self, fmt, *args):
             pass  # suppress per-request noise
+
+        def guess_type(self, path):
+            ext = Path(str(path)).suffix.lower()
+            return _MIME.get(ext) or super().guess_type(path)
 
     handler = functools.partial(_QuietHandler, directory=str(hls_dir))
     httpd = http.server.HTTPServer(("127.0.0.1", port), handler)
