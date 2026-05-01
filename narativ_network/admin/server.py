@@ -70,9 +70,8 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                ORDER BY started_at DESC LIMIT 25"""
         ).fetchall()
         conn.close()
-        return TEMPLATES.TemplateResponse("dashboard.html", {
-            "request": request, "upcoming": upcoming, "recent": recent,
-        })
+        return TEMPLATES.TemplateResponse(request=request, name="dashboard.html",
+                                           context={"upcoming": upcoming, "recent": recent})
 
     @app.get("/shows", response_class=HTMLResponse)
     def shows(request: Request):
@@ -85,19 +84,20 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                FROM shows ORDER BY title"""
         ).fetchall()
         conn.close()
-        return TEMPLATES.TemplateResponse("shows.html",
-                                          {"request": request, "shows": rows})
+        return TEMPLATES.TemplateResponse(request=request, name="shows.html",
+                                           context={"shows": rows})
 
     @app.get("/schedule", response_class=HTMLResponse)
     def schedule(request: Request):
         conn = connect(cfg)
-        slots = conn.execute("SELECT * FROM slots WHERE enabled=1 ORDER BY day_of_week, start_minute").fetchall()
-        shows_rows = conn.execute("SELECT id, title FROM shows ORDER BY title").fetchall()
+        slots = [dict(r) for r in conn.execute(
+            "SELECT * FROM slots WHERE enabled=1 ORDER BY day_of_week, start_minute").fetchall()]
+        shows_rows = [dict(r) for r in conn.execute(
+            "SELECT id, title FROM shows ORDER BY title").fetchall()]
         conn.close()
-        return TEMPLATES.TemplateResponse("schedule.html", {
-            "request": request, "slots": slots, "shows": shows_rows,
-            "slot_minutes": cfg.schedule.slot_minutes,
-        })
+        return TEMPLATES.TemplateResponse(request=request, name="schedule.html",
+                                           context={"slots": slots, "shows": shows_rows,
+                                                    "slot_minutes": cfg.schedule.slot_minutes})
 
     @app.get("/api/now_playing")
     def api_now_playing():
@@ -339,9 +339,8 @@ def create_app(cfg: Config | None = None) -> FastAPI:
             "FROM shows WHERE live_capable=1 ORDER BY title"
         ).fetchall()
         conn.close()
-        return TEMPLATES.TemplateResponse("live_cue.html", {
-            "request": request, "sessions": sessions, "shows": live_shows,
-        })
+        return TEMPLATES.TemplateResponse(request=request, name="live_cue.html",
+                                           context={"sessions": sessions, "shows": live_shows})
 
     # ── Transcripts: search + per-episode read ──────────────────────
     @app.get("/api/search")
@@ -376,9 +375,8 @@ def create_app(cfg: Config | None = None) -> FastAPI:
         if q:
             from ..transcripts import search
             results = search(cfg, q, limit=50)
-        return TEMPLATES.TemplateResponse("search.html", {
-            "request": request, "q": q, "results": results,
-        })
+        return TEMPLATES.TemplateResponse(request=request, name="search.html",
+                                           context={"q": q, "results": results})
 
     @app.get("/healthz")
     def healthz():
