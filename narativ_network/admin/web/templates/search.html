@@ -1,0 +1,31 @@
+{% extends "_base.html" %}
+{% block title %}Search — Narrative Network{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Transcript search</h2>
+  <form method="get" action="/search" style="display:flex; gap:8px;">
+    <input type="search" name="q" value="{{ q }}" placeholder="Search every aired show…"
+           autofocus style="flex:1; padding:8px; background:#0a0b0e; color:#f0f2f6; border:1px solid #232730; border-radius:6px;">
+    <button type="submit" style="padding:8px 16px; background:#ff3a3a; color:#fff; border:0; border-radius:6px; font-weight:700; cursor:pointer;">Search</button>
+  </form>
+
+  {% if q %}
+  <p class="muted" style="margin-top:12px;">{{ results|length }} hit{{ '' if results|length == 1 else 's' }}.</p>
+  <table class="grid">
+    <thead><tr><th>Show</th><th>Episode</th><th>Match</th><th>Score</th></tr></thead>
+    <tbody>
+      {% for r in results %}
+      <tr>
+        <td>{{ r['show_title'] or '—' }}</td>
+        <td><a href="/api/transcript/{{ r['episode_id'] }}">{{ r['title'] or 'ep ' ~ r['episode_id'] }}</a></td>
+        <td><small>{{ r['snippet']|safe }}</small></td>
+        <td><code>{{ '%.2f'|format(r['bm25']) }}</code></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4"><em>No matches.</em></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+{% endblock %}

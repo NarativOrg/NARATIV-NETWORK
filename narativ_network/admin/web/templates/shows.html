@@ -1,0 +1,32 @@
+{% extends "_base.html" %}
+{% block title %}Shows — Narrative Network{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Shows</h2>
+  <table class="grid">
+    <thead>
+      <tr><th>Slug</th><th>Title</th><th>Contributor</th><th>Min</th>
+          <th>Ad/hr</th><th>Audio preset</th><th>Live?</th>
+          <th>Ready</th><th>Descript Q</th><th>Failed</th></tr>
+    </thead>
+    <tbody>
+      {% for s in shows %}
+      <tr>
+        <td><code>{{ s['slug'] }}</code></td>
+        <td>{{ s['title'] }}</td>
+        <td>{{ s['contributor'] or '' }}</td>
+        <td>{{ s['default_duration_min'] }}</td>
+        <td>{{ s['ad_breaks_per_hour'] }}</td>
+        <td><code>{{ s['audio_preset'] or 'DIALOG_TIGHT' }}</code></td>
+        <td>{{ 'yes' if s['live_capable'] else '—' }}</td>
+        <td>{{ s['ready_count'] }}</td>
+        <td>{{ s['descript_count'] }}</td>
+        <td>{{ s['failed_count'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><em>Add/edit shows via the API or the SQLite db directly for now —
+     a creator-facing form lands in Phase 2.</em></p>
+</section>
+{% endblock %}

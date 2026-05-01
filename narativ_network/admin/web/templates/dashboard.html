@@ -1,0 +1,37 @@
+{% extends "_base.html" %}
+{% block title %}Dashboard — Narrative Network{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Up next</h2>
+  <table class="grid">
+    <thead><tr><th>Time (UTC)</th><th>Show</th><th>Episode</th><th>Rule</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for u in upcoming %}
+      <tr class="lvl{{ u['fallback_level'] }}">
+        <td><code>{{ u['scheduled_at'] }}</code></td>
+        <td>{{ u['show_title'] or '—' }}</td>
+        <td>{{ u['ep_title'] or '(slate)' }}</td>
+        <td><small>{{ u['rule_used'] }}</small></td>
+        <td>{{ u['status'] }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5"><em>No planned playlist. Hit /api/regenerate.</em></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Run log (most recent)</h2>
+  <table class="grid">
+    <thead><tr><th>When (UTC)</th><th>Status</th><th>Detail</th></tr></thead>
+    <tbody>
+      {% for r in recent %}
+      <tr><td><code>{{ r['started_at'] }}</code></td><td>{{ r['status'] }}</td><td>{{ r['detail'] or '' }}</td></tr>
+      {% else %}
+      <tr><td colspan="3"><em>No log entries yet.</em></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

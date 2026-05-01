@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Narrative Network{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">NARRATIVE NETWORK</div>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/shows">Shows</a>
+      <a href="/schedule">Schedule</a>
+      <a href="/live">Live Cue</a>
+      <a href="/search">Search</a>
+    </nav>
+    <div class="onair" id="onair">— on air —</div>
+    <div class="breakin-controls">
+      <button id="btn-breakin" class="btn-bigred" type="button">▶ BREAK IN LIVE</button>
+      <button id="btn-return" class="btn-bigblack" type="button">RETURN TO AIR</button>
+    </div>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

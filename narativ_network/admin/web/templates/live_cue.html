@@ -1,0 +1,108 @@
+{% extends "_base.html" %}
+{% block title %}Live Cue — Narrative Network{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Live cue · upcoming live slots</h2>
+  <p class="muted">
+    Paste each session's source URL before air. Empty URL at slot start →
+    we fall through to the slate; press <strong>GO NOW</strong> when the
+    URL arrives.
+  </p>
+  <table class="grid">
+    <thead><tr>
+      <th>Air (UTC)</th><th>Show</th><th>Source kind</th>
+      <th>Source URL</th><th>Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody>
+      {% for s in sessions %}
+      <tr>
+        <td><code>{{ s['scheduled_at'] }}</code></td>
+        <td>{{ s['show_title'] }} <small class="muted">({{ s['show_slug'] }})</small></td>
+        <td><small>{{ s['source_kind'] }}</small></td>
+        <td>
+          <input class="urlinput" data-session="{{ s['id'] }}"
+                 value="{{ s['source_url'] or '' }}"
+                 placeholder="rtmp://… or https://…m3u8">
+        </td>
+        <td>{{ s['status'] }}</td>
+        <td>
+          <button class="btn-arm" data-session="{{ s['id'] }}">ARM</button>
+          <button class="btn-gonow" data-session="{{ s['id'] }}">GO NOW</button>
+          <button class="btn-skip" data-session="{{ s['id'] }}">SKIP</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6"><em>No upcoming live sessions. Add a `live_show` slot in the schedule.</em></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Live-capable shows</h2>
+  <table class="grid">
+    <thead><tr>
+      <th>Slug</th><th>Title</th><th>Source kind</th>
+      <th>RTMP push URL (if rtmp_push)</th><th>Stream key</th>
+      <th>Default URL (if hybrid)</th>
+    </tr></thead>
+    <tbody>
+      {% for s in shows %}
+      <tr>
+        <td><code>{{ s['slug'] }}</code></td>
+        <td>{{ s['title'] }}</td>
+        <td><small>{{ s['live_source_kind'] }}</small></td>
+        <td>
+          {% if s['live_source_kind'] == 'rtmp_push' %}
+          <code>rtmp://YOUR_MAC:1935/internal/live</code>
+          {% else %}—{% endif %}
+        </td>
+        <td><code>{{ s['live_stream_key'] or '—' }}</code></td>
+        <td><code>{{ s['live_default_url'] or '—' }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<script>
+(function () {
+  function token() {
+    let t = localStorage.getItem('nn_admin_token');
+    if (!t) { t = prompt('Admin token?') || ''; localStorage.setItem('nn_admin_token', t); }
+    return t;
+  }
+  async function post(url, data) {
+    const fd = new FormData();
+    for (const [k,v] of Object.entries(data)) fd.append(k, v);
+    const r = await fetch(url, { method: 'POST', body: fd,
+      headers: { Authorization: 'Bearer ' + token() } });
+    if (!r.ok) {
+      if (r.status === 401) localStorage.removeItem('nn_admin_token');
+      alert(r.status + ' — ' + (await r.text()));
+    }
+    return r;
+  }
+  document.querySelectorAll('.btn-arm').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.session;
+    const input = document.querySelector(`.urlinput[data-session="${id}"]`);
+    const url = (input?.value || '').trim();
+    if (!url) { alert('Paste a source URL first.'); return; }
+    await post('/api/live_arm', { session_id: id, source_url: url });
+    location.reload();
+  }));
+  document.querySelectorAll('.btn-gonow').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.session;
+    if (!confirm('Cut to LIVE for this session right now?')) return;
+    await post('/api/live_go_now', { session_id: id });
+    location.reload();
+  }));
+  document.querySelectorAll('.btn-skip').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.session;
+    const reason = prompt('Reason for skipping?', 'no-show') || '';
+    await post('/api/live_skip', { session_id: id, reason });
+    location.reload();
+  }));
+})();
+</script>
+{% endblock %}

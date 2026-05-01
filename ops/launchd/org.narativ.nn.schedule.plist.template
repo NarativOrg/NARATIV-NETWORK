@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>           <string>org.narativ.nn.schedule</string>
+  <key>ProgramArguments</key>
+    <array>
+      <string>__VENV_PYTHON__</string>
+      <string>-m</string>
+      <string>narativ_network.cli</string>
+      <string>schedule</string>
+    </array>
+  <key>WorkingDirectory</key><string>__PROJECT_ROOT__</string>
+  <key>EnvironmentVariables</key>
+    <dict>
+      <key>NN_CONFIG</key><string>__CONFIG_PATH__</string>
+      <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+  <key>RunAtLoad</key>       <true/>
+  <key>KeepAlive</key>       <true/>
+  <key>StandardOutPath</key> <string>__LOG_DIR__/schedule.log</string>
+  <key>StandardErrorPath</key><string>__LOG_DIR__/schedule.err.log</string>
+</dict>
+</plist>

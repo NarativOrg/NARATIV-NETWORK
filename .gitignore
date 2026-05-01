@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Local config and secrets
+*.local.toml
+.env
+.env.*
+!.env.example
+service-account*.json
+*.key
+
+# Data — runtime artifacts, not source
+data/inbox/*
+data/descript_queue/*
+data/descript_done/*
+data/archive/*
+data/run_logs/*
+!data/inbox/.gitkeep
+!data/descript_queue/.gitkeep
+!data/descript_done/.gitkeep
+!data/archive/.gitkeep
+!data/run_logs/.gitkeep
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

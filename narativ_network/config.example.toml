@@ -1,0 +1,139 @@
+# Narativ Network — example configuration.
+# Copy to ~/.narativ-network/config.toml and edit.
+# Never commit the real config — it contains secrets.
+
+# Where data/ lives. Leave empty to use the directory you run `nn` from
+# (the right answer for almost everyone — only set this if your data
+# directory lives somewhere other than the project checkout).
+project_root = ""
+db_path      = "data/narativ_network.sqlite"
+timezone     = "America/New_York"
+
+[playout]
+# Path B (default): playout pushes to LOCAL nginx-rtmp on the Mac mini.
+# OBS reads from /scheduled and pushes the active scene to the public
+# destinations (either via OBS Multi-RTMP plugin or via nginx-rtmp's
+# `distribute` push blocks — see ops/nginx-rtmp/nginx.conf).
+rtmp_url             = "rtmp://127.0.0.1:1935/internal"
+stream_key           = "scheduled"
+video_bitrate_kbps   = 6000
+audio_bitrate_kbps   = 192
+width                = 1920
+height               = 1080
+fps                  = 30
+keyframe_interval_sec = 2
+
+[ingest]
+# How often to poll all enabled sources.
+poll_seconds                  = 900
+# Path to a Google service-account JSON. Share creator GDrive folders
+# with the service account's email — no per-creator OAuth needed.
+gdrive_service_account_json   = "/Users/narativ/.narativ-network/service-account.json"
+inbox_dir                     = "data/inbox"
+
+[process]
+archive_dir         = "data/archive"
+descript_queue_dir  = "data/descript_queue"
+descript_done_dir   = "data/descript_done"
+# EBU R128 loudness target. -23 LUFS = broadcast; -16 = streaming-platform-friendly.
+target_lufs         = -23.0
+# Silence trim parameters (head/tail only — never the middle).
+silence_db          = -40.0
+silence_min_sec     = 1.5
+
+[schedule]
+slot_minutes              = 30
+fallback_reair_min_age_days = 7
+rolling_horizon_hours     = 6
+regenerate_every_minutes  = 5
+slate_path                = "data/slates/we_will_be_right_back.mp4"
+
+[watchdog]
+check_interval_sec      = 10
+silence_threshold_sec   = 5
+black_threshold_sec     = 5
+restart_max_per_minute  = 3
+
+[admin]
+bind_host    = "127.0.0.1"
+bind_port    = 8765
+# Set a long random string. Required for any state-changing API call.
+admin_token  = "REPLACE_ME_WITH_LONG_RANDOM_STRING"
+
+[obs]
+# OBS WebSocket (Tools → WebSocket Server Settings in OBS).
+websocket_url      = "ws://127.0.0.1:4455"
+websocket_password = "REPLACE_ME_WITH_OBS_WEBSOCKET_PASSWORD"
+# Scene names — must match what you create in OBS (see ops/obs/SETUP.md).
+scene_scheduled = "SCHEDULED"
+scene_live      = "LIVE"
+scene_standby   = "STANDBY"
+# Name of the Media Source inside the LIVE scene whose URL the cue
+# runner retargets per session. Match the source name in OBS exactly.
+live_input_name = "live_source"
+
+[multistream]
+# This system doesn't push to public RTMP itself — OBS does (or
+# nginx-rtmp's `distribute` block). Keep destinations here as a record
+# / for the dashboard to display, even if the pushes are configured
+# elsewhere.
+destinations = [
+  # { name = "YouTube",  url = "rtmp://a.rtmp.youtube.com/live2", key = "..." },
+  # { name = "Facebook", url = "rtmps://live-api-s.facebook.com:443/rtmp", key = "..." },
+  # { name = "Twitch",   url = "rtmp://live.twitch.tv/app", key = "..." },
+  # { name = "X",        url = "rtmp://x-ingest.video.x.com/live", key = "..." },
+]
+
+[upstream]
+# Optional fallback path: upload daily-build artifacts to upstream.so
+# instead of running the homegrown multi-stream. Default is OFF — Path B
+# is the primary path. Flip upload_mode if/when you want to use it.
+upload_mode             = "manual"   # "manual" | "api" | "playwright"
+daily_build_at_local    = "23:00"
+exact_slot_lengths      = false
+# External monitor (optional): poll a YouTube live URL or any HTTP
+# status URL to confirm we're actually on air.
+youtube_channel_url     = ""
+upstream_status_url     = ""
+monitor_interval_sec    = 60
+miss_threshold          = 3
+
+[audio]
+# Channel master bus — applied to the live encoder output at playout.
+# Sole purpose: stop anything from leaving the channel above broadcast
+# ceiling. Per-show shaping happens at process time via the show's
+# audio_preset (DIALOG_TIGHT / DOC_NATURAL / MUSIC_LIGHT / PANEL /
+# NEWS_HARD — see narativ_network/process/audio.py).
+
+[audio.master_bus]
+disabled            = false        # set true to skip the master bus entirely
+compressor_disabled = false        # gentle catch-all compressor
+limiter_disabled    = false        # true-peak limiter (broadcast ceiling)
+limiter_dbtp        = -1.0         # ceiling in dBTP. -1 is broadcast standard.
+
+[audio.master_bus.compressor]
+threshold_db = -8.0
+ratio        = 2.0
+attack_ms    = 30
+release_ms   = 300
+makeup_db    = 0
+
+[transcripts]
+# Engine: "auto" (whisper.cpp if installed, else openai-whisper),
+#         "whisper.cpp" (preferred — fast on Apple Silicon via Metal),
+#         "openai-whisper" (Python package fallback).
+engine     = "auto"
+# Path to a whisper.cpp ggml model. Get with:
+#   brew install whisper-cpp
+#   curl -L -o ~/whisper-models/ggml-medium.en.bin \
+#     https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin
+model_path = "/opt/homebrew/share/whisper.cpp/ggml-medium.en.bin"
+# For openai-whisper fallback only.
+model_name = "medium.en"
+# Empty = auto-detect; or "en", "es", etc.
+language   = ""
+threads    = 8
+# Extra args passed straight to whisper-cli, if you want them.
+extra_args = []
+# How often the watch-loop wakes up to look for new episodes.
+watch_interval_sec = 60

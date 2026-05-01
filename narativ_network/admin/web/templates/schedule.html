@@ -1,0 +1,64 @@
+{% extends "_base.html" %}
+{% block title %}Schedule — Narrative Network{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Programming Grid</h2>
+  <p class="muted">Drag a show from the right onto a cell. Click a slot to edit.
+     Slot length: {{ slot_minutes }} min.</p>
+
+  <div class="grid-wrap">
+    <div id="grid" class="weekgrid"
+         data-slot-minutes="{{ slot_minutes }}"
+         data-slots='{{ slots | tojson }}'></div>
+    <aside id="palette">
+      <h3>Shows</h3>
+      <ul id="show-list">
+        {% for s in shows %}
+        <li class="show-tile" draggable="true" data-show-id="{{ s['id'] }}">{{ s['title'] }}</li>
+        {% endfor %}
+      </ul>
+      <h3>Special rules</h3>
+      <ul>
+        <li class="show-tile" draggable="true" data-rule="category_pool"
+            data-rule-payload='{"tags":["filler","evergreen"]}'>FILLER POOL</li>
+        <li class="show-tile" draggable="true" data-rule="stunt_block">STUNT BLOCK</li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<dialog id="slot-editor">
+  <form method="dialog" id="slot-form">
+    <h3 id="slot-form-title">Edit slot</h3>
+    <input type="hidden" name="slot_id" id="f-slot-id">
+    <label>Label <input name="label" id="f-label"></label>
+    <label>Day of week (0=Mon … 6=Sun)
+      <input type="number" min="0" max="6" name="day_of_week" id="f-dow"></label>
+    <label>Start (minutes from 00:00)
+      <input type="number" min="0" max="1439" name="start_minute" id="f-start"></label>
+    <label>Length (min)
+      <input type="number" min="5" name="length_min" id="f-length"></label>
+    <label>Rule type
+      <select name="rule_type" id="f-rule-type">
+        <option value="show_rotation">show_rotation</option>
+        <option value="fixed_episode">fixed_episode</option>
+        <option value="category_pool">category_pool</option>
+        <option value="stunt_block">stunt_block</option>
+      </select>
+    </label>
+    <label>Rule payload (JSON)
+      <textarea name="rule_payload" id="f-payload" rows="3">{}</textarea></label>
+    <label>Recurrence
+      <select name="recurrence" id="f-rec">
+        <option>weekly</option><option>daily</option>
+        <option>weekdays</option><option>weekends</option><option>once</option>
+      </select>
+    </label>
+    <menu>
+      <button value="save" id="btn-save">Save</button>
+      <button value="delete" id="btn-delete">Delete</button>
+      <button value="cancel">Cancel</button>
+    </menu>
+  </form>
+</dialog>
+{% endblock %}
