@@ -555,7 +555,12 @@ def preview(
     from .playout.pusher import build_command
 
     hls_dir = Path("/tmp/nn_preview_hls")
-    hls_dir.mkdir(parents=True, exist_ok=True)
+    # Wipe stale segments from any previous run so Safari never sees a
+    # sequence number it already consumed.
+    import shutil as _shutil
+    if hls_dir.exists():
+        _shutil.rmtree(hls_dir)
+    hls_dir.mkdir(parents=True)
     m3u8 = hls_dir / "live.m3u8"
 
     cmd = build_command(cfg, output_override=[
@@ -563,6 +568,7 @@ def preview(
         "-hls_time", "2",
         "-hls_list_size", "5",
         "-hls_flags", "delete_segments",
+        "-hls_start_number_source", "datetime",
         str(m3u8),
     ], realtime=True)
 
