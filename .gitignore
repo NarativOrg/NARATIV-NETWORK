@@ -23,11 +23,13 @@ data/descript_queue/*
 data/descript_done/*
 data/archive/*
 data/run_logs/*
+data/slates/*
 !data/inbox/.gitkeep
 !data/descript_queue/.gitkeep
 !data/descript_done/.gitkeep
 !data/archive/.gitkeep
 !data/run_logs/.gitkeep
+!data/slates/.gitkeep
 
 # Database
 *.sqlite
