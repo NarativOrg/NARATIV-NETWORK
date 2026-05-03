@@ -86,3 +86,13 @@ dialog#slot-editor input, dialog#slot-editor textarea, dialog#slot-editor select
 dialog#slot-editor menu { display: flex; gap: 8px; padding: 0; margin-top: 12px; }
 dialog#slot-editor button { padding: 6px 12px; border: 1px solid var(--grid); background: #0a0b0e; color: var(--ink); border-radius: 4px; cursor: pointer; }
 #btn-delete { color: var(--bad); }
+
+.action-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.btn-action {
+  background: #1e2430; color: var(--ink); border: 1px solid var(--grid);
+  border-radius: 6px; padding: 9px 18px; font-size: 13px; font-weight: 600;
+  cursor: pointer; letter-spacing: 0.04em;
+}
+.btn-action:hover { background: #2a3040; border-color: var(--accent); }
+.btn-action:disabled { opacity: 0.4; cursor: default; }
+.muted { color: var(--mute); font-size: 12px; margin: 4px 0; min-height: 18px; }

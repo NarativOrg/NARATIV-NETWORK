@@ -2,6 +2,16 @@
 {% block title %}Dashboard — Narrative Network{% endblock %}
 {% block content %}
 <section class="card">
+  <h2>Pipeline actions</h2>
+  <div class="action-row">
+    <button class="btn-action" id="btn-poll">⬇ Poll Inbox</button>
+    <button class="btn-action" id="btn-process">⚙ Process</button>
+    <button class="btn-action" id="btn-regen">↺ Regenerate Playlist</button>
+  </div>
+  <p id="action-status" class="muted"></p>
+</section>
+
+<section class="card">
   <h2>Up next</h2>
   <table class="grid">
     <thead><tr><th>Time (UTC)</th><th>Show</th><th>Episode</th><th>Rule</th><th>Status</th></tr></thead>

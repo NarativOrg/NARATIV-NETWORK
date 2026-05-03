@@ -21,6 +21,29 @@
   refreshNow();
   setInterval(refreshNow, 15000);
 
+  // ── Pipeline action buttons (dashboard only) ─────────────────────
+  function actionBtn(id, url, label) {
+    const btn = document.getElementById(id);
+    const status = document.getElementById('action-status');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      if (status) status.textContent = label + '…';
+      try {
+        const r = await fetch(url, { method: 'POST', headers: { Authorization: 'Bearer ' + getToken() }});
+        const j = await r.json().catch(() => ({}));
+        if (status) status.textContent = label + ' done. ' + (j.detail || JSON.stringify(j));
+      } catch (e) {
+        if (status) status.textContent = 'Error: ' + e;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+  actionBtn('btn-poll',    '/api/poll_now',   'Polling inbox');
+  actionBtn('btn-process', '/api/process_now','Processing episodes');
+  actionBtn('btn-regen',   '/api/regenerate', 'Regenerating playlist');
+
   // ── BREAK IN / RETURN TO AIR (OBS scene control) ─────────────────
   const btnBreak = document.getElementById('btn-breakin');
   const btnReturn = document.getElementById('btn-return');
